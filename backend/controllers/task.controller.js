@@ -1,23 +1,25 @@
-const { Sequelize } = require('sequelize');
+const { Op, Sequelize } = require('sequelize');
 const Task = require('../models/task.model');
 
 exports.getTasks = async (req, res) => {
-  const limit = parseInt(req.query.limit) || 10;
-  const offset = parseInt(req.query.offset) || 0;
+  const { limit = 10, offset = 0, search = '' } = req.query;
 
   try {
     const tasks = await Task.findAll({
       limit: parseInt(limit),
       offset: parseInt(offset),
+      where: search
+        ? { title: { [Op.like]: `%${search}%` } }
+        : undefined,
       order: [
-        [Sequelize.literal(`status = 'Pending'`), 'DESC'],         // Pending first (alphabetically)
-        ['createdAt', 'DESC'],     // Newest first
+        [Sequelize.literal(`status = 'Pending'`), 'DESC'],
+        ['createdAt', 'DESC']
       ]
     });
 
     res.status(200).json(tasks);
   } catch (err) {
-    res.status(500).json({ error: 'Something went wrong while fetching tasks.' });
+    res.status(500).json({ error: 'Failed to fetch tasks' });
   }
 };
 
